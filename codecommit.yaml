@@ -1,0 +1,47 @@
+Description: CloudFormation for AWS CodeCommit 
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  RepoName:
+    Type: String
+    Description: The unique bucket name where deployment distribution is located
+  RepoDescription:
+    Type: String
+    Description: Description of your bucket
+  EmailAddress:
+    Description: Email Address
+    Type: String
+
+Resources:
+  MySNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      Subscription:
+        - Endpoint: !Ref EmailAddress
+          Protocol: email
+  Repo:
+    Type: AWS::CodeCommit::Repository
+    DependsOn: MySNSTopic
+    Properties:
+
+      RepositoryName: !Ref RepoName
+      RepositoryDescription: !Ref RepoDescription
+      Triggers:
+      - Name: MasterTrigger
+        CustomData: !Ref 'AWS::StackName'
+        DestinationArn: !Ref MySNSTopic
+        Branches:
+        - Master
+        Events:
+        - all
+Outputs:
+  CodeCommitURL:
+    Value: !Join 
+      - ''
+      - - 'https://console.aws.amazon.com/codecommit/home?region='
+        - !Ref 'AWS::Region'
+        - '#/repository/'
+        - !Ref RepoName
+        - /browse/HEAD/--/
+    Description: Git Repository URL
+  MySNSTopic:
+    Value: !Ref MySNSTopic
